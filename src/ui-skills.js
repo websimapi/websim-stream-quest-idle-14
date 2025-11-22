@@ -19,6 +19,13 @@ export function renderSkillsList(uiManager) {
         const levelInfo = getLevelInfo(totalXp);
         const progressPct = Math.round(levelInfo.progress * 100);
 
+        // NEW: compute previous progress for smooth animation
+        const prevTotalXp = uiManager.previousSkillXp
+            ? uiManager.previousSkillXp[skill.id] || 0
+            : 0;
+        const prevLevelInfo = getLevelInfo(prevTotalXp);
+        const prevPct = Math.round(prevLevelInfo.progress * 100);
+
         div.innerHTML = `
                 <img src="${skill.icon}" alt="${skill.name}">
                 <div class="skill-text">
@@ -27,10 +34,25 @@ export function renderSkillsList(uiManager) {
                         <span class="skill-level-label">Lv ${levelInfo.level}</span>
                     </div>
                     <div class="skill-xp-bar">
-                        <div class="skill-xp-fill" style="width:${progressPct}%;"></div>
+                        <div class="skill-xp-fill"></div>
                     </div>
                 </div>
             `;
+
+        // NEW: animate XP bar from previous percent to current percent
+        const fillEl = div.querySelector('.skill-xp-fill');
+        if (fillEl) {
+            // Start at previous width (or 0 if first time)
+            fillEl.style.width = `${prevPct}%`;
+
+            // Use double requestAnimationFrame to ensure transition kicks in
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    fillEl.style.width = `${progressPct}%`;
+                });
+            });
+        }
+
         div.onclick = () => {
             // Immediately update selected skill and visual highlight locally
             uiManager.currentSkillId = skill.id;

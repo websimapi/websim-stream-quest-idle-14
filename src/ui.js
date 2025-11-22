@@ -5,6 +5,7 @@ import { renderInventory } from './ui-inventory.js';
 import { initListeners as initListenersImpl } from './ui-init.js';
 import { updateState as updateStateImpl } from './ui-state.js';
 import { startProgressLoop as startProgressLoopImpl, stopProgressLoop as stopProgressLoopImpl } from './ui-progress.js';
+import { computeSkillXp } from './xp.js'; // NEW: for tracking previous XP
 
 const ONE_HOUR_MS = 60 * 60 * 1000; // matches server-side energy duration
 
@@ -57,6 +58,8 @@ export class UIManager {
         this.scavengingActiveTier = 'beginner';
         // New: track which skill is currently selected in the UI
         this.currentSkillId = null;
+        // NEW: track previous total XP per skill for smooth XP bar animations
+        this.previousSkillXp = {};
 
         // Elements
         this.skillsList = document.getElementById('skills-list');
@@ -169,6 +172,18 @@ export class UIManager {
     }
 
     updateState(playerData) {
+        // NEW: snapshot previous total XP per skill before state changes
+        if (this.state) {
+            const prev = {};
+            for (const [skillId] of Object.entries(SKILLS)) {
+                prev[skillId] = computeSkillXp(this.state, skillId);
+            }
+            this.previousSkillXp = prev;
+        } else {
+            // First state update: start from zero so bars animate from empty
+            this.previousSkillXp = {};
+        }
+
         updateStateImpl(this, playerData);
     }
 
